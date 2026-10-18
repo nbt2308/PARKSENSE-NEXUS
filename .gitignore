@@ -1,0 +1,16 @@
+
+# Secrets
+secrets.h
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+build/
+dist/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

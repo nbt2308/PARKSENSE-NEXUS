@@ -1,0 +1,12 @@
+#ifndef SECRETS_H
+#define SECRETS_H
+
+#define WIFI_SSID "Wokwi-GUEST"
+#define WIFI_PASSWORD ""
+
+#define THINGSPEAK_WRITE_API_KEY "YOUR_WRITE_API_KEY"
+
+#define TELEGRAM_BOT_TOKEN "YOUR_BOT_TOKEN"
+#define TELEGRAM_CHAT_ID "YOUR_CHAT_ID"
+
+#endif

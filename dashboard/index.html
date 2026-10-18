@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0d0b" />
+  <meta name="description" content="Bảng điều khiển giám sát bãi đỗ xe thông minh theo thời gian thực." />
+  <title>PARKSENSE NEXUS — Smart Parking</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: "#0a0d0b", panel: "#111613", line: "#242c26",
+            lime: "#b7f34a", muted: "#89938b", occupied: "#f47d68"
+          },
+          fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"] },
+          animation: {
+            enter: "enter .65s cubic-bezier(.2,.8,.2,1) both",
+            pulseSoft: "pulseSoft 2s ease-in-out infinite"
+          },
+          keyframes: {
+            enter: { "0%": { opacity: "0", transform: "translateY(12px)" }, "100%": { opacity: "1", transform: "translateY(0)" } },
+            pulseSoft: { "0%,100%": { opacity: ".55" }, "50%": { opacity: "1" } }
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="min-h-screen bg-ink font-sans text-[#eef2ed] antialiased selection:bg-lime selection:text-ink">
+  <main class="mx-auto max-w-[1440px] px-4 py-5 sm:px-7 sm:py-8 lg:px-10">
+    <header class="relative mb-8 overflow-hidden rounded-[28px] border border-line bg-panel px-5 py-6 sm:px-8 sm:py-7 animate-enter">
+      <div class="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full border border-lime/[.08]"></div>
+      <div class="pointer-events-none absolute -right-4 -top-24 h-64 w-64 rounded-full border border-lime/[.08]"></div>
+      <div class="relative flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-center gap-4 sm:gap-5">
+          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-lime text-ink sm:h-16 sm:w-16">
+            <i data-lucide="square-parking" class="h-7 w-7 sm:h-8 sm:w-8"></i>
+          </div>
+          <div>
+            <div class="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.25em] text-lime sm:text-[11px]"><span class="h-1.5 w-1.5 rounded-full bg-lime"></span>SMART PARKING <span class="text-muted">·</span> IoT SYSTEM</div>
+            <h1 class="text-2xl font-bold leading-none tracking-[-.045em] text-[#f1f5ef] sm:text-4xl">PARKSENSE <span class="text-lime">NEXUS</span></h1>
+            <p class="mt-2 text-xs font-medium text-muted sm:text-sm">Hệ thống giám sát và quản lý bãi đỗ xe thông minh ứng dụng IoT</p>
+            <p class="mt-2 text-xs italic text-[#c2cbc2] sm:text-sm">“Sense the Space. Simplify the Parking.”</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5 lg:justify-end">
+          <div class="flex items-center gap-2 rounded-full border border-line bg-ink/70 px-3.5 py-2.5 text-xs text-muted">
+            <i data-lucide="radio" class="h-3.5 w-3.5"></i><span>ThingSpeak</span>
+            <span class="mx-0.5 h-3 w-px bg-line"></span>
+            <span id="connection" class="flex items-center gap-2 text-[#d6ddd7]"><span class="h-1.5 w-1.5 animate-pulseSoft rounded-full bg-amber-300"></span><span>Đang kết nối</span></span>
+          </div>
+          <div class="flex items-center gap-2 rounded-full border border-line bg-ink/70 px-3.5 py-2.5 text-xs text-muted"><span class="h-1.5 w-1.5 animate-pulseSoft rounded-full bg-lime"></span>Tự động cập nhật <span class="font-semibold tabular-nums text-[#d6ddd7]">20s</span></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="mb-5 grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
+      <article class="relative overflow-hidden rounded-3xl border border-line bg-panel p-6 sm:p-8 animate-enter">
+        <div class="pointer-events-none absolute -right-12 -top-20 h-64 w-64 rounded-full border border-lime/10"></div>
+        <div class="pointer-events-none absolute -right-4 -top-12 h-48 w-48 rounded-full border border-lime/10"></div>
+        <div class="relative flex h-full flex-col justify-between gap-8 sm:flex-row sm:items-end">
+          <div>
+            <div class="mb-5 flex items-center gap-2 text-xs font-medium uppercase tracking-[.16em] text-muted"><i data-lucide="layout-dashboard" class="h-4 w-4 text-lime"></i> Tổng quan bãi xe</div>
+            <p class="mb-1 text-sm text-muted">Vị trí sẵn sàng</p>
+            <div class="flex items-baseline gap-3"><span id="available" class="text-6xl font-semibold tracking-[-.06em] text-lime tabular-nums sm:text-7xl">--</span><span class="text-xl text-muted">/ 3 chỗ</span></div>
+            <p id="availabilityNote" class="mt-3 text-sm text-muted">Đang chờ dữ liệu từ hệ thống…</p>
+          </div>
+          <div class="w-full max-w-[220px]">
+            <div class="mb-2 flex justify-between text-xs"><span class="text-muted">Mức sử dụng</span><span id="occupancy" class="font-semibold text-[#eef2ed] tabular-nums">--%</span></div>
+            <div class="h-2 overflow-hidden rounded-full bg-[#252d27]"><div id="occupancyBar" class="h-full w-0 rounded-full bg-lime transition-[width] duration-700 ease-out"></div></div>
+            <div class="mt-3 flex justify-between text-[11px] text-muted"><span>0%</span><span>100%</span></div>
+          </div>
+        </div>
+      </article>
+
+      <div class="grid grid-cols-2 gap-4 animate-enter [animation-delay:100ms]">
+        <article class="flex flex-col justify-between rounded-3xl border border-line bg-panel p-5 sm:p-6">
+          <div class="flex items-center justify-between"><span class="text-xs text-muted">Đang đỗ</span><span class="flex h-9 w-9 items-center justify-center rounded-xl bg-occupied/10 text-occupied"><i data-lucide="car-front" class="h-[18px] w-[18px]"></i></span></div>
+          <div class="mt-7"><span id="occupied" class="text-4xl font-semibold tracking-tight tabular-nums">--</span><span class="ml-1.5 text-sm text-muted">/ 3</span></div>
+          <p class="mt-1 text-xs text-muted">Vị trí có phương tiện</p>
+        </article>
+        <article class="flex flex-col justify-between rounded-3xl border border-line bg-panel p-5 sm:p-6">
+          <div class="flex items-center justify-between"><span class="text-xs text-muted">Cổng ra vào</span><span id="gateIcon" class="flex h-9 w-9 items-center justify-center rounded-xl bg-lime/10 text-lime"><i data-lucide="scan-line" class="h-[18px] w-[18px]"></i></span></div>
+          <div class="mt-7"><span id="gate" class="text-2xl font-semibold tracking-tight">--</span></div>
+          <p class="mt-1 text-xs text-muted">Cảm biến <span id="gateDistance">-- cm</span></p>
+        </article>
+      </div>
+    </section>
+
+    <section class="mb-5">
+      <div class="mb-3 flex items-end justify-between gap-3">
+        <div><p class="mb-1 text-[10px] font-bold uppercase tracking-[.2em] text-lime">Live occupancy</p><h2 class="text-lg font-semibold">Trạng thái từng vị trí</h2></div>
+        <span class="flex items-center gap-2 text-xs text-muted"><span class="h-1.5 w-1.5 animate-pulseSoft rounded-full bg-lime"></span>Cập nhật trực tiếp</span>
+      </div>
+      <div id="slots" class="grid gap-4 md:grid-cols-3">
+        <article class="rounded-2xl border border-line bg-panel p-5"><p class="text-sm text-muted">Vị trí 01</p><p class="mt-5 text-sm text-muted">Đang chờ dữ liệu…</p></article>
+        <article class="rounded-2xl border border-line bg-panel p-5"><p class="text-sm text-muted">Vị trí 02</p><p class="mt-5 text-sm text-muted">Đang chờ dữ liệu…</p></article>
+        <article class="rounded-2xl border border-line bg-panel p-5"><p class="text-sm text-muted">Vị trí 03</p><p class="mt-5 text-sm text-muted">Đang chờ dữ liệu…</p></article>
+      </div>
+    </section>
+
+    <section class="mb-5 grid gap-5 lg:grid-cols-[1.4fr_.6fr]">
+      <article class="rounded-3xl border border-line bg-panel p-5 sm:p-6 animate-enter [animation-delay:200ms]">
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div><p class="mb-1 text-[10px] font-bold uppercase tracking-[.2em] text-lime">Activity</p><h2 class="text-base font-semibold">Lịch sử tỷ lệ lấp đầy</h2></div>
+          <span class="flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-[11px] text-muted"><span class="h-1.5 w-1.5 rounded-full bg-lime"></span>20 bản ghi gần nhất</span>
+        </div>
+        <div class="h-[250px] sm:h-[280px]"><canvas id="occupancyChart" aria-label="Biểu đồ lịch sử tỷ lệ lấp đầy bãi đỗ xe" role="img"></canvas></div>
+        <div class="error mt-3 hidden rounded-xl border border-occupied/20 bg-occupied/5 px-4 py-3 text-sm text-[#ff9d8d]" id="error" role="status"></div>
+      </article>
+      <article class="rounded-3xl border border-line bg-panel p-5 sm:p-6 animate-enter [animation-delay:300ms]">
+        <div class="mb-5"><p class="mb-1 text-[10px] font-bold uppercase tracking-[.2em] text-lime">System health</p><h2 class="text-base font-semibold">Thông tin hệ thống</h2></div>
+        <div class="space-y-0">
+          <div class="flex items-center justify-between gap-3 border-b border-line py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="door-open" class="h-4 w-4"></i>Trạng thái cổng</span><strong id="gateDetail" class="text-sm font-medium">--</strong></div>
+          <div class="flex items-center justify-between gap-3 border-b border-line py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="waves" class="h-4 w-4"></i>Khoảng cách</span><strong id="distanceDetail" class="text-sm font-medium tabular-nums">-- cm</strong></div>
+          <div class="flex items-center justify-between gap-3 border-b border-line py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="clock-3" class="h-4 w-4"></i>Cập nhật lúc</span><strong id="updatedAt" class="text-right text-xs font-medium text-[#d6ddd7]">--</strong></div>
+          <div class="flex items-center justify-between gap-3 py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="database" class="h-4 w-4"></i>Channel ID</span><strong id="channelLabel" class="font-mono text-xs font-medium text-lime">--</strong></div>
+        </div>
+        <div class="mt-3 rounded-2xl bg-[#0c100d] p-4"><div class="flex items-center gap-2 text-xs font-medium text-[#d6ddd7]"><i data-lucide="shield-check" class="h-4 w-4 text-lime"></i>Kết nối dữ liệu an toàn</div><p class="mt-2 pl-6 text-[11px] leading-relaxed text-muted">ESP32 · HC-SR04 · ThingSpeak<br />Chu kỳ đồng bộ dashboard: 20 giây</p></div>
+      </article>
+    </section>
+
+    <footer class="flex flex-col items-center justify-between gap-2 border-t border-line pt-5 text-[11px] text-muted sm:flex-row"><span>PARKSENSE NEXUS <span class="mx-1 text-line">/</span> Smart Parking IoT</span><span>Giám sát bãi đỗ xe theo thời gian thực</span></footer>
+  </main>
+
+  <script>
+    // Thay CHANNEL_ID bang Channel ID cua m.
+    const CHANNEL_ID = "3541233";
+    // Neu channel la Public, de READ_API_KEY rong. Neu Private, nhap Read API Key.
+    const READ_API_KEY = "0HHNBVCM92P0DEBY";
+    
+    const connectionEl = document.getElementById("connection");
+    const errorEl = document.getElementById("error");
+    const channelLabel = document.getElementById("channelLabel");
+    const availableEl = document.getElementById("available");
+    const chart = new Chart(document.getElementById("occupancyChart"), {
+      type: "line",
+      data: { labels: [], datasets: [{
+        label: "Tỷ lệ lấp đầy (%)", data: [], borderColor: "#b7f34a",
+        backgroundColor: "rgba(183,243,74,.08)", fill: true, tension: .35,
+        borderWidth: 2, pointRadius: 3, pointHoverRadius: 6,
+        pointBackgroundColor: "#b7f34a", pointBorderColor: "#111613", pointBorderWidth: 2
+      }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+        plugins: { legend: { display: true, labels: { color: "#89938b", usePointStyle: true, pointStyle: "circle", boxWidth: 7, boxHeight: 7, padding: 18, font: { size: 11 } } }, tooltip: { backgroundColor: "#1b231d", borderColor: "#303a31", borderWidth: 1, titleColor: "#eef2ed", bodyColor: "#b7f34a", padding: 12, displayColors: false, callbacks: { label: context => ` Lấp đầy: ${context.parsed.y}%` } } },
+        scales: {
+          y: { min: 0, max: 100, ticks: { color: "#78827a", stepSize: 25, padding: 10, callback: value => value + "%", font: { size: 10 } }, grid: { color: "rgba(137,147,139,.11)", drawTicks: false }, border: { display: false } },
+          x: { ticks: { color: "#78827a", maxTicksLimit: 7, maxRotation: 0, padding: 10, font: { size: 10 } }, grid: { display: false }, border: { display: false } }
+        }
+      }
+    });
+
+    function renderIcons(root = document) {
+      if (window.lucide) window.lucide.createIcons({ root });
+    }
+
+    function renderSlot(index, isOccupied) {
+      const statusLabel = isOccupied ? "Đang sử dụng" : "Sẵn sàng";
+      const tone = isOccupied
+        ? { border: "border-occupied/25", wash: "bg-occupied/10", text: "text-occupied", icon: "car-front", detail: "Có phương tiện trong vị trí" }
+        : { border: "border-lime/25", wash: "bg-lime/10", text: "text-lime", icon: "parking-circle", detail: "Vị trí đang trống" };
+      return `<article class="group relative overflow-hidden rounded-2xl border ${tone.border} bg-panel p-5 transition duration-300 hover:-translate-y-1 hover:bg-[#151b16] motion-reduce:transition-none" style="animation:enter .55s cubic-bezier(.2,.8,.2,1) ${index * 90}ms both">
+        <div class="flex items-center justify-between"><div><p class="text-[10px] font-bold uppercase tracking-[.2em] text-muted">Parking bay</p><h3 class="mt-1 text-lg font-semibold">Vị trí ${String(index).padStart(2, "0")}</h3></div>
+        <span class="flex items-center gap-2 rounded-full ${tone.wash} px-3 py-1.5 text-[10px] font-semibold ${tone.text}"><span class="h-1.5 w-1.5 rounded-full ${isOccupied ? "bg-occupied" : "bg-lime"}"></span>${statusLabel}</span></div>
+        <div class="mt-6 flex items-end justify-between"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl ${tone.wash} ${tone.text}"><i data-lucide="${tone.icon}" class="h-5 w-5"></i></span><p class="pb-1 text-xs text-muted">${tone.detail}</p></div><span class="font-mono text-[10px] text-[#59635b]">SLOT_${index}</span></div>
+      </article>`;
+    }
+
+    function setConnection(state, label) {
+      const styles = {
+        loading: "bg-amber-300", connected: "bg-lime", error: "bg-occupied"
+      };
+      connectionEl.replaceChildren();
+      const dot = document.createElement("span");
+      dot.className = `h-1.5 w-1.5 rounded-full ${styles[state]} ${state === "loading" ? "animate-pulseSoft" : ""}`;
+      const text = document.createElement("span");
+      text.textContent = label;
+      connectionEl.append(dot, text);
+      connectionEl.className = `flex items-center gap-2 ${state === "connected" ? "text-lime" : state === "error" ? "text-occupied" : "text-[#d6ddd7]"}`;
+    }
+
+    channelLabel.textContent = CHANNEL_ID === "3541233" ? "Demo / 3541233" : CHANNEL_ID;
+
+    async function loadData() {
+      if (CHANNEL_ID === "YOUR_CHANNEL_ID") {
+        setConnection("error", "Chưa cấu hình");
+        errorEl.textContent = "Tạo channel ThingSpeak rồi điền CHANNEL_ID trong file index.html.";
+        errorEl.classList.remove("hidden");
+        return;
+      }
+
+      setConnection("loading", "Đang đồng bộ");
+      try {
+        const keyQuery = READ_API_KEY ? `&api_key=${encodeURIComponent(READ_API_KEY)}` : "";
+        const url = `https://api.thingspeak.com/channels/${encodeURIComponent(CHANNEL_ID)}/feeds.json?results=20${keyQuery}`;
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const json = await response.json();
+        const feeds = (json.feeds || []).filter(feed => feed.field1 !== null && feed.field2 !== null && feed.field3 !== null);
+        if (!feeds.length) throw new Error("Channel chưa có dữ liệu hợp lệ. Hãy chạy Wokwi và chờ ESP32 gửi dữ liệu.");
+
+        const latest = feeds[feeds.length - 1];
+        const occupied = [latest.field1, latest.field2, latest.field3].map(value => Number(value) === 1);
+        const occupiedCount = occupied.filter(Boolean).length;
+        const availableCount = latest.field4 !== null ? Number(latest.field4) : 3 - occupiedCount;
+        const percentage = latest.field6 !== null ? Number(latest.field6) : Math.round(occupiedCount / 3 * 100);
+        const safePercentage = Math.max(0, Math.min(100, Number.isFinite(percentage) ? percentage : 0));
+
+        availableEl.textContent = String(availableCount);
+        document.getElementById("occupancy").textContent = `${safePercentage}%`;
+        document.getElementById("occupancyBar").style.width = `${safePercentage}%`;
+        document.getElementById("occupied").textContent = String(occupiedCount);
+        document.getElementById("availabilityNote").textContent = availableCount === 0 ? "Bãi xe đã kín chỗ" : `${availableCount} vị trí sẵn sàng nhận xe`;
+        const slots = document.getElementById("slots");
+        slots.innerHTML = occupied.map((value, index) => renderSlot(index + 1, value)).join("");
+        renderIcons(slots);
+
+        const gateOpen = Number(latest.field7) === 1;
+        const gateText = gateOpen ? "Đang mở" : "Đang đóng";
+        document.getElementById("gate").textContent = gateText;
+        document.getElementById("gateDetail").textContent = gateText;
+        document.getElementById("gate").className = `text-2xl font-semibold tracking-tight ${gateOpen ? "text-lime" : "text-[#eef2ed]"}`;
+        const distance = latest.field8 === null ? null : Number(latest.field8);
+        const distanceText = distance === null || !Number.isFinite(distance) ? "-- cm" : `${distance.toFixed(1)} cm`;
+        document.getElementById("gateDistance").textContent = distanceText;
+        document.getElementById("distanceDetail").textContent = distanceText;
+        document.getElementById("updatedAt").textContent = new Date(latest.created_at).toLocaleString("vi-VN");
+        setConnection("connected", "Đã nhận dữ liệu");
+        errorEl.textContent = "";
+        errorEl.classList.add("hidden");
+
+        chart.data.labels = feeds.map(feed => new Date(feed.created_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }));
+        chart.data.datasets[0].data = feeds.map(feed => feed.field6 === null ? null : Number(feed.field6));
+        chart.update();
+      } catch (error) {
+        setConnection("error", "Lỗi kết nối");
+        errorEl.textContent = `Không tải được dữ liệu: ${error.message}`;
+        errorEl.classList.remove("hidden");
+      }
+    }
+
+    renderIcons();
+    loadData();
+    setInterval(loadData, 20000);
+  </script>
+</body>
+</html>
