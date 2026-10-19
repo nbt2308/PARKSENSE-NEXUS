@@ -7,6 +7,7 @@
 #include <HTTPClient.h>
 #include <ctype.h>
 #include <string.h>
+#include <math.h>
 #include "secrets.h"
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -505,7 +506,7 @@ void setup() {
   // -------------------------
   // Ket noi Wi-Fi toi da 15 giay; that bai thi cac phan con lai van chay.
   WiFi.mode(WIFI_STA);
-  WiFi.begin(wifi_ssid, wifi_password, 6);
+  WiFi.begin(wifi_ssid, wifi_password);
 
   Serial.print("Connecting to WiFi");
   unsigned long wifiStart = millis();
