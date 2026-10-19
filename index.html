@@ -104,8 +104,27 @@
       </div>
     </section>
 
+    <section class="mb-5 grid gap-5 xl:grid-cols-2">
+      <article class="min-w-0 rounded-3xl border border-line bg-panel p-5 sm:p-6 animate-enter [animation-delay:150ms]">
+        <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div><p class="mb-1 text-[10px] font-bold uppercase tracking-[.2em] text-lime">Slot activity</p><h2 class="text-base font-semibold">Lịch sử chuyển trạng thái</h2></div>
+          <span id="eventHistoryScope" class="text-[11px] text-muted">Đang tải lịch sử…</span>
+        </div>
+        <div id="slotHistory" class="space-y-3" aria-live="polite">
+          <p class="rounded-xl border border-line px-4 py-3 text-sm text-muted">Đang chờ dữ liệu…</p>
+        </div>
+      </article>
+      <article class="min-w-0 rounded-3xl border border-line bg-panel p-5 sm:p-6 animate-enter [animation-delay:200ms]">
+        <div class="mb-5"><p class="mb-1 text-[10px] font-bold uppercase tracking-[.2em] text-lime">Usage insights</p><h2 class="text-base font-semibold">Thời lượng &amp; khung giờ đông</h2></div>
+        <p class="mb-4 text-[11px] leading-relaxed text-muted">Ước tính từ các mẫu dữ liệu liên tiếp nhận được trên trình duyệt này; khoảng mất dữ liệu được loại khỏi phép tính.</p>
+        <div id="usageStats" class="grid gap-3 sm:grid-cols-2" aria-live="polite">
+          <p class="rounded-xl border border-line px-4 py-3 text-sm text-muted">Đang tính toán…</p>
+        </div>
+      </article>
+    </section>
+
     <section class="mb-5 grid gap-5 lg:grid-cols-[1.4fr_.6fr]">
-      <article class="rounded-3xl border border-line bg-panel p-5 sm:p-6 animate-enter [animation-delay:200ms]">
+      <article class="min-w-0 rounded-3xl border border-line bg-panel p-5 sm:p-6 animate-enter [animation-delay:200ms]">
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div><p class="mb-1 text-[10px] font-bold uppercase tracking-[.2em] text-lime">Activity</p><h2 class="text-base font-semibold">Lịch sử tỷ lệ lấp đầy</h2></div>
           <span class="flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-[11px] text-muted"><span class="h-1.5 w-1.5 rounded-full bg-lime"></span>20 bản ghi gần nhất</span>
@@ -119,7 +138,10 @@
           <div class="flex items-center justify-between gap-3 border-b border-line py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="door-open" class="h-4 w-4"></i>Trạng thái cổng</span><strong id="gateDetail" class="text-sm font-medium">--</strong></div>
           <div class="flex items-center justify-between gap-3 border-b border-line py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="waves" class="h-4 w-4"></i>Khoảng cách</span><strong id="distanceDetail" class="text-sm font-medium tabular-nums">-- cm</strong></div>
           <div class="flex items-center justify-between gap-3 border-b border-line py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="clock-3" class="h-4 w-4"></i>Cập nhật lúc</span><strong id="updatedAt" class="text-right text-xs font-medium text-[#d6ddd7]">--</strong></div>
-          <div class="flex items-center justify-between gap-3 py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="database" class="h-4 w-4"></i>Channel ID</span><strong id="channelLabel" class="font-mono text-xs font-medium text-lime">--</strong></div>
+          <div class="flex items-center justify-between gap-3 border-b border-line py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="database" class="h-4 w-4"></i>Channel ID</span><strong id="channelLabel" class="max-w-[55%] break-all text-right font-mono text-xs font-medium text-lime">--</strong></div>
+          <div class="flex items-center justify-between gap-3 border-b border-line py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="wifi" class="h-4 w-4"></i>Heartbeat thiết bị</span><strong id="heartbeatStatus" class="text-right text-xs font-medium text-muted">--</strong></div>
+          <div class="flex items-center justify-between gap-3 border-b border-line py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="radio-tower" class="h-4 w-4"></i>ThingSpeak API</span><strong id="apiStatus" class="text-right text-xs font-medium text-muted">--</strong></div>
+          <div class="flex items-center justify-between gap-3 py-4"><span class="flex items-center gap-2.5 text-sm text-muted"><i data-lucide="activity" class="h-4 w-4"></i>Sức khỏe cảm biến</span><strong id="sensorStatus" class="max-w-[55%] break-words text-right text-xs font-medium text-muted">Chưa có dữ liệu chẩn đoán</strong></div>
         </div>
         <div class="mt-3 rounded-2xl bg-[#0c100d] p-4"><div class="flex items-center gap-2 text-xs font-medium text-[#d6ddd7]"><i data-lucide="shield-check" class="h-4 w-4 text-lime"></i>Kết nối dữ liệu an toàn</div><p class="mt-2 pl-6 text-[11px] leading-relaxed text-muted">ESP32 · HC-SR04 · ThingSpeak<br />Chu kỳ đồng bộ dashboard: 20 giây</p></div>
       </article>
@@ -131,13 +153,19 @@
   <script>
     // Thay CHANNEL_ID bang Channel ID cua m.
     const CHANNEL_ID = "3541233";
-    // Neu channel la Public, de READ_API_KEY rong. Neu Private, nhap Read API Key.
-    const READ_API_KEY = "0HHNBVCM92P0DEBY";
+    // [FIX-SECURITY] Public channel: leave Read API Key blank. Do not expose private Read API Key in frontend.
+    const READ_API_KEY = "0HHNBVCM92P0DEBY"; 
     
     const connectionEl = document.getElementById("connection");
     const errorEl = document.getElementById("error");
     const channelLabel = document.getElementById("channelLabel");
     const availableEl = document.getElementById("available");
+    const HEARTBEAT_STALE_MS = 65000; // [FIX-3] Mark data stale after 65 seconds.
+    const MAX_EVENT_HISTORY = 60;
+    const HISTORY_STORAGE_KEY = `parksense-events-${CHANNEL_ID}`;
+    let requestInFlight = false;
+    let latestFeedTimestamp = null;
+    let observedEvents = loadEventHistory();
     const chart = new Chart(document.getElementById("occupancyChart"), {
       type: "line",
       data: { labels: [], datasets: [{
@@ -160,14 +188,20 @@
       if (window.lucide) window.lucide.createIcons({ root });
     }
 
-    function renderSlot(index, isOccupied) {
-      const statusLabel = isOccupied ? "Đang sử dụng" : "Sẵn sàng";
-      const tone = isOccupied
-        ? { border: "border-occupied/25", wash: "bg-occupied/10", text: "text-occupied", icon: "car-front", detail: "Có phương tiện trong vị trí" }
-        : { border: "border-lime/25", wash: "bg-lime/10", text: "text-lime", icon: "parking-circle", detail: "Vị trí đang trống" };
+    // [FIX-1] Field values: 0=empty, 1=occupied, 2=sensor error/unknown.
+    function renderSlot(index, rawState) {
+      const state = Number(rawState);
+      const isOccupied = state === 1;
+      const isError = state !== 0 && state !== 1;
+      const statusLabel = isError ? "Lỗi cảm biến / chưa xác định" : (isOccupied ? "Đang sử dụng" : "Trống");
+      const tone = isError
+        ? { border: "border-amber-300/25", wash: "bg-amber-300/10", text: "text-amber-300", icon: "alert-triangle", detail: "Không tính là chỗ trống" }
+        : isOccupied
+          ? { border: "border-occupied/25", wash: "bg-occupied/10", text: "text-occupied", icon: "car-front", detail: "Có phương tiện trong vị trí" }
+          : { border: "border-lime/25", wash: "bg-lime/10", text: "text-lime", icon: "parking-circle", detail: "Vị trí đã xác nhận đang trống" };
       return `<article class="group relative overflow-hidden rounded-2xl border ${tone.border} bg-panel p-5 transition duration-300 hover:-translate-y-1 hover:bg-[#151b16] motion-reduce:transition-none" style="animation:enter .55s cubic-bezier(.2,.8,.2,1) ${index * 90}ms both">
         <div class="flex items-center justify-between"><div><p class="text-[10px] font-bold uppercase tracking-[.2em] text-muted">Parking bay</p><h3 class="mt-1 text-lg font-semibold">Vị trí ${String(index).padStart(2, "0")}</h3></div>
-        <span class="flex items-center gap-2 rounded-full ${tone.wash} px-3 py-1.5 text-[10px] font-semibold ${tone.text}"><span class="h-1.5 w-1.5 rounded-full ${isOccupied ? "bg-occupied" : "bg-lime"}"></span>${statusLabel}</span></div>
+        <span class="flex items-center gap-2 rounded-full ${tone.wash} px-3 py-1.5 text-[10px] font-semibold ${tone.text}"><span class="h-1.5 w-1.5 rounded-full ${isError ? "bg-amber-300" : isOccupied ? "bg-occupied" : "bg-lime"}"></span>${statusLabel}</span></div>
         <div class="mt-6 flex items-end justify-between"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl ${tone.wash} ${tone.text}"><i data-lucide="${tone.icon}" class="h-5 w-5"></i></span><p class="pb-1 text-xs text-muted">${tone.detail}</p></div><span class="font-mono text-[10px] text-[#59635b]">SLOT_${index}</span></div>
       </article>`;
     }
@@ -187,7 +221,110 @@
 
     channelLabel.textContent = CHANNEL_ID === "3541233" ? "Demo / 3541233" : CHANNEL_ID;
 
+    function loadEventHistory() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || "[]");
+        return Array.isArray(saved) ? saved.filter(event => event && Number.isFinite(Date.parse(event.at)) && Number.isInteger(event.slot) && event.slot >= 1 && event.slot <= 3 && typeof event.occupied === "boolean").slice(-MAX_EVENT_HISTORY) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveEventHistory() {
+      try {
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(observedEvents.slice(-MAX_EVENT_HISTORY)));
+      } catch {
+        // Browser storage may be disabled or full; the current session can still show events.
+      }
+    }
+
+    function setHealth(id, label, tone = "muted") {
+      const element = document.getElementById(id);
+      const colors = { good: "text-lime", warning: "text-amber-300", bad: "text-occupied", muted: "text-muted" };
+      element.textContent = label;
+      element.className = `text-right text-xs font-medium ${colors[tone] || colors.muted}`;
+    }
+
+    function formatDuration(milliseconds) {
+      const minutes = Math.max(0, Math.floor(milliseconds / 60000));
+      if (minutes < 60) return `${minutes} phút`;
+      const hours = Math.floor(minutes / 60);
+      const remainder = minutes % 60;
+      return remainder ? `${hours} giờ ${remainder} phút` : `${hours} giờ`;
+    }
+
+    function renderActivity(feeds) {
+      const ordered = feeds.map(feed => ({
+        at: Date.parse(feed.created_at),
+        states: [feed.field1, feed.field2, feed.field3].map(value => value === null || value === undefined || value === "" ? null : Number(value))
+      })).filter(sample => Number.isFinite(sample.at)).sort((a, b) => a.at - b.at); // [FIX-1] Preserve error states in event history.
+      const seen = new Set(observedEvents.map(event => event.feedAt));
+      for (let i = 1; i < ordered.length; i++) {
+        const previous = ordered[i - 1];
+        const current = ordered[i];
+        if (current.at - previous.at > HEARTBEAT_STALE_MS) continue;
+        for (let slot = 0; slot < 3; slot++) {
+          const previousState = previous.states[slot];
+          const currentState = current.states[slot];
+          if (![0, 1].includes(previousState) || ![0, 1].includes(currentState) || currentState === previousState) continue;
+          const feedAt = `${current.at}:${slot + 1}`;
+          if (seen.has(feedAt)) continue;
+          observedEvents.push({ at: new Date(current.at).toISOString(), slot: slot + 1, occupied: currentState === 1, feedAt });
+          seen.add(feedAt);
+        }
+      }
+      observedEvents = observedEvents.sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).slice(-MAX_EVENT_HISTORY);
+      saveEventHistory();
+
+      const history = document.getElementById("slotHistory");
+      const recentEvents = observedEvents.slice(-12).reverse();
+      document.getElementById("eventHistoryScope").textContent = `${observedEvents.length} sự kiện · lưu trên trình duyệt này`;
+      history.innerHTML = recentEvents.length ? recentEvents.map(event => `<div class="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl border border-line px-4 py-3"><span class="text-sm font-medium">Vị trí ${String(event.slot).padStart(2, "0")} <span class="${event.occupied ? "text-occupied" : "text-lime"}">${event.occupied ? "· Có xe" : "· Trống"}</span></span><time class="text-xs text-muted" datetime="${event.at}">${new Date(event.at).toLocaleString("vi-VN")}</time></div>`).join("") : '<p class="rounded-xl border border-line px-4 py-3 text-sm text-muted">Chưa ghi nhận chuyển trạng thái. Cần ít nhất hai bản ghi liên tiếp có trạng thái khác nhau.</p>';
+
+      const slotUsage = [0, 1, 2].map(slot => {
+        let total = 0;
+        for (let i = 1; i < ordered.length; i++) {
+          const previous = ordered[i - 1];
+          const current = ordered[i];
+          const gap = current.at - previous.at;
+          if (gap > HEARTBEAT_STALE_MS || previous.states[slot] !== 1) continue;
+          total += gap;
+        }
+        return total;
+      });
+      const totalSamples = slotUsage.reduce((sum, value) => sum + value, 0);
+      const busyByHour = Array(24).fill(0);
+      for (let i = 1; i < ordered.length; i++) {
+        const previous = ordered[i - 1];
+        const current = ordered[i];
+        const gap = current.at - previous.at;
+        if (gap > HEARTBEAT_STALE_MS) continue;
+        const hour = new Date(previous.at).getHours();
+        busyByHour[hour] += gap * previous.states.filter(state => state === 1).length;
+      }
+      const maxBusy = Math.max(...busyByHour);
+      const busiestHours = maxBusy > 0 ? busyByHour.map((value, hour) => value === maxBusy ? hour : -1).filter(hour => hour >= 0).map(hour => `${String(hour).padStart(2, "0")}:00`).join(", ") : "Chưa đủ dữ liệu";
+      const stats = document.getElementById("usageStats");
+      stats.innerHTML = slotUsage.map((duration, index) => `<div class="rounded-xl border border-line p-4"><p class="text-xs text-muted">Vị trí ${String(index + 1).padStart(2, "0")} · thời gian có xe</p><p class="mt-2 text-lg font-semibold text-[#eef2ed]">${formatDuration(duration)}</p></div>`).join("") + `<div class="rounded-xl border border-line p-4 sm:col-span-2"><p class="text-xs text-muted">Khung giờ đông nhất (ước tính)</p><p class="mt-2 text-lg font-semibold text-lime">${busiestHours}</p><p class="mt-1 text-[11px] text-muted">${formatDuration(totalSamples)} tổng thời lượng chỗ có xe trong các khoảng dữ liệu liên tục</p></div>`;
+    }
+
+    function updateHeartbeat() {
+      if (!latestFeedTimestamp) {
+        setHealth("heartbeatStatus", "Chưa có timestamp hợp lệ", "warning");
+        return;
+      }
+      const age = Date.now() - latestFeedTimestamp;
+      const stale = age > HEARTBEAT_STALE_MS;
+      const status = stale ? `Dữ liệu cũ · ${formatDuration(age)} trước` : `Dữ liệu mới · ${formatDuration(age)} trước`;
+      setHealth("heartbeatStatus", status, stale ? "warning" : "good");
+      document.getElementById("updatedAt").className = `text-right text-xs font-medium ${stale ? "text-amber-300" : "text-[#d6ddd7]"}`;
+      if (stale) setConnection("error", "Dữ liệu đã cũ");
+    }
+
+    channelLabel.textContent = CHANNEL_ID === "3541233" ? "Demo / 3541233" : CHANNEL_ID;
+
     async function loadData() {
+      if (requestInFlight) return;
       if (CHANNEL_ID === "YOUR_CHANNEL_ID") {
         setConnection("error", "Chưa cấu hình");
         errorEl.textContent = "Tạo channel ThingSpeak rồi điền CHANNEL_ID trong file index.html.";
@@ -195,30 +332,41 @@
         return;
       }
 
+      requestInFlight = true;
       setConnection("loading", "Đang đồng bộ");
+      setHealth("apiStatus", "Đang kiểm tra", "muted");
       try {
         const keyQuery = READ_API_KEY ? `&api_key=${encodeURIComponent(READ_API_KEY)}` : "";
         const url = `https://api.thingspeak.com/channels/${encodeURIComponent(CHANNEL_ID)}/feeds.json?results=20${keyQuery}`;
         const response = await fetch(url, { cache: "no-store" });
+        console.log(`Fetched ${url} → HTTP ${response.status}`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const json = await response.json();
         const feeds = (json.feeds || []).filter(feed => feed.field1 !== null && feed.field2 !== null && feed.field3 !== null);
         if (!feeds.length) throw new Error("Channel chưa có dữ liệu hợp lệ. Hãy chạy Wokwi và chờ ESP32 gửi dữ liệu.");
 
         const latest = feeds[feeds.length - 1];
-        const occupied = [latest.field1, latest.field2, latest.field3].map(value => Number(value) === 1);
-        const occupiedCount = occupied.filter(Boolean).length;
-        const availableCount = latest.field4 !== null ? Number(latest.field4) : 3 - occupiedCount;
-        const percentage = latest.field6 !== null ? Number(latest.field6) : Math.round(occupiedCount / 3 * 100);
+        const latestTimestamp = Date.parse(latest.created_at);
+        latestFeedTimestamp = Number.isFinite(latestTimestamp) ? latestTimestamp : null;
+        renderActivity(feeds);
+        // [FIX-1] Read 0=empty, 1=occupied, 2=sensor error/unknown.
+        const slotStates = [latest.field1, latest.field2, latest.field3].map(value => value === null ? 2 : Number(value));
+        const occupied = slotStates.map(value => value === 1);
+        const occupiedCount = slotStates.filter(value => value === 1).length;
+        const availableCount = slotStates.filter(value => value === 0).length; // Never count sensor errors as available.
+        const errorCount = slotStates.filter(value => value !== 0 && value !== 1).length;
+        const percentage = Math.round(occupiedCount / 3 * 100);
         const safePercentage = Math.max(0, Math.min(100, Number.isFinite(percentage) ? percentage : 0));
 
         availableEl.textContent = String(availableCount);
         document.getElementById("occupancy").textContent = `${safePercentage}%`;
         document.getElementById("occupancyBar").style.width = `${safePercentage}%`;
         document.getElementById("occupied").textContent = String(occupiedCount);
-        document.getElementById("availabilityNote").textContent = availableCount === 0 ? "Bãi xe đã kín chỗ" : `${availableCount} vị trí sẵn sàng nhận xe`;
+        document.getElementById("availabilityNote").textContent = errorCount > 0
+          ? `${availableCount} chỗ trống đã xác nhận · ${errorCount} vị trí lỗi/chưa xác định`
+          : (availableCount === 0 ? "Bãi xe đã kín chỗ" : `${availableCount} vị trí sẵn sàng nhận xe`);
         const slots = document.getElementById("slots");
-        slots.innerHTML = occupied.map((value, index) => renderSlot(index + 1, value)).join("");
+        slots.innerHTML = slotStates.map((value, index) => renderSlot(index + 1, value)).join(""); // [FIX-1] Render sensor errors distinctly.
         renderIcons(slots);
 
         const gateOpen = Number(latest.field7) === 1;
@@ -230,8 +378,11 @@
         const distanceText = distance === null || !Number.isFinite(distance) ? "-- cm" : `${distance.toFixed(1)} cm`;
         document.getElementById("gateDistance").textContent = distanceText;
         document.getElementById("distanceDetail").textContent = distanceText;
-        document.getElementById("updatedAt").textContent = new Date(latest.created_at).toLocaleString("vi-VN");
+        document.getElementById("updatedAt").textContent = latestFeedTimestamp ? new Date(latestFeedTimestamp).toLocaleString("vi-VN") : "Thời gian không hợp lệ";
+        setHealth("apiStatus", "Đang phản hồi", "good");
+        setHealth("sensorStatus", "Chưa có dữ liệu chẩn đoán cảm biến", "muted");
         setConnection("connected", "Đã nhận dữ liệu");
+        updateHeartbeat();
         errorEl.textContent = "";
         errorEl.classList.add("hidden");
 
@@ -239,15 +390,28 @@
         chart.data.datasets[0].data = feeds.map(feed => feed.field6 === null ? null : Number(feed.field6));
         chart.update();
       } catch (error) {
-        setConnection("error", "Lỗi kết nối");
-        errorEl.textContent = `Không tải được dữ liệu: ${error.message}`;
+        setHealth("apiStatus", "Không phản hồi", "bad");
+        if (latestFeedTimestamp && Date.now() - latestFeedTimestamp > HEARTBEAT_STALE_MS) {
+          setHealth("heartbeatStatus", "Dữ liệu cũ · thiết bị chưa gửi mới", "warning");
+          setConnection("error", "Dữ liệu đã cũ");
+        } else {
+          setConnection("error", "Lỗi kết nối");
+        }
+        errorEl.textContent = `Không tải được dữ liệu: ${error.message}. Số liệu trước đó (nếu có) có thể đã cũ.`;
         errorEl.classList.remove("hidden");
+      } finally {
+        requestInFlight = false;
       }
     }
 
+    // [FIX-3] Schedule next poll only after the current request finishes.
+    async function pollingLoop() {
+      await loadData();
+      updateHeartbeat();
+      setTimeout(pollingLoop, 20000);
+    }
     renderIcons();
-    loadData();
-    setInterval(loadData, 20000);
+    pollingLoop();
   </script>
 </body>
 </html>

@@ -13,7 +13,10 @@ The system uses an ESP32 microcontroller and ultrasonic sensors to detect vehicl
 - **Ultrasonic Distance Measurement** – Measure distances to detect vehicles in parking slots and at the entrance.
 - **OLED Status Display** – Display parking availability and system status locally.
 - **ThingSpeak Integration** – Upload parking data for remote monitoring and visualization.
-- **Web Dashboard** – View parking occupancy, available spaces, and barrier status through a web interface.
+- **Web Dashboard** – Responsive view of parking occupancy, available spaces, and barrier status.
+- **Per-slot activity history** – Show occupancy transitions observed in ThingSpeak feeds; event cache is local to each browser.
+- **Usage estimates** – Estimate occupied duration per slot and busiest hour from consecutive feed samples, excluding large data gaps.
+- **System health indicators** – Show ThingSpeak request status, latest-feed heartbeat/freshness, and last update time.
 - **Telegram Notifications** – Receive alerts about parking availability and sensor/system events.
 - **Wi-Fi Connectivity** – Connect the ESP32 to a wireless network to send monitoring data.
 
@@ -160,14 +163,20 @@ ParkSense-Nexus/
 
 Adjust the directory names to match the actual repository. Do not commit the local `secrets.h` file.
 
+## Dashboard History and Health Limitations
+
+- Event history and usage estimates are derived from ThingSpeak samples available to the dashboard and are approximate; gaps longer than the freshness threshold are excluded from duration calculations.
+- The dashboard keeps a limited event cache in browser `localStorage`. It is not a shared or durable central database and may be cleared by the user/browser.
+- The device heartbeat is inferred from the timestamp of the newest ThingSpeak feed. It indicates whether new telemetry has arrived recently, not the exact Wi-Fi connection state.
+- ThingSpeak API reachability is measured separately from device heartbeat.
+- Sensor timeout/fault state is not currently sent in the ThingSpeak fields, so the dashboard explicitly reports that sensor diagnostics are unavailable. Showing exact sensor health requires a future firmware and channel-field update.
+
 ## Future Improvements
 
-- Add historical parking statistics and occupancy charts.
-- Improve sensor failure detection and system diagnostics.
-- Add a mobile-friendly dashboard layout.
+- Publish per-sensor health/fault fields from firmware and display them on the dashboard.
+- Store historical parking events in a dedicated database for shared, long-term analytics.
 - Support multiple parking areas.
 - Add user authentication and role-based access control.
-- Store historical parking events in a dedicated database.
 - Introduce a backend API for secure data access and management.
 
 ## Project Status

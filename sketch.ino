@@ -104,7 +104,7 @@ Servo gateServo;
 // KHOẢNG CÁCH PHÁT HIỆN XE
 // =========================
 
-#define OCCUPIED_DISTANCE 30.0
+#define OCCUPIED_DISTANCE 30.0f
 #define GATE_DETECT_DISTANCE 20.0
 
 // =========================
@@ -116,6 +116,15 @@ const unsigned long GATE_CLOSE_DELAY = 3000;
 unsigned long lastCarDetected = 0;
 
 bool gateOpened = false;
+
+//định nghĩa trạng thái chỗ đỗ
+enum SlotState : uint8_t { SLOT_EMPTY = 0, SLOT_OCCUPIED = 1, SLOT_SENSOR_ERROR = 2 };
+
+//lọc theo trạng thái nếu không hợp lệ thì loại bỏ
+float getFilteredDistance(int trigPin, int echoPin);
+SlotState classifySlot(float distance);
+int slotStateToThingSpeak(SlotState state);
+
 
 // ==================================================
 // ĐỌC KHOẢNG CÁCH HC-SR04
@@ -131,18 +140,40 @@ float getDistance(int trigPin, int echoPin) {
 
   digitalWrite(trigPin, LOW);
 
-  long duration = pulseIn(
-    echoPin,
-    HIGH,
-    30000
-  );
+  unsigned long duration = pulseIn(echoPin, HIGH, 30000UL);
 
   if (duration == 0) {
-    return 999;
+    return -1.0f; // Timeout: phép đo không hợp lệ
   }
 
-  return duration * 0.0343 / 2;
+  return duration * 0.0343f / 2.0f;
 }
+
+//lọc nhiễu từ cảm biến
+//Hàm mới này thực hiện tối đa ba lần đo khoảng cách, lấy các kết quả hợp lệ rồi chọn trung vị (median)
+float getFilteredDistance(int trigPin, int echoPin) {
+  float values[3];
+  int count = 0;
+  for (int i = 0; i < 3; ++i) {
+    float value = getDistance(trigPin, echoPin);
+    if (isfinite(value) && value >= 0) values[count++] = value;
+    if (i < 2) delay(25);
+  }
+  if (count == 0) return -1.0f;
+  if (count == 1) return values[0];
+  if (count == 2) return (values[0] + values[1]) / 2.0f;
+  if (values[0] > values[1]) { float t = values[0]; values[0] = values[1]; values[1] = t; }
+  if (values[1] > values[2]) { float t = values[1]; values[1] = values[2]; values[2] = t; }
+  if (values[0] > values[1]) { float t = values[0]; values[0] = values[1]; values[1] = t; }
+  return values[1];
+}
+//xác định trạng thái chỗ đỗ
+SlotState classifySlot(float distance) {
+  if (!isfinite(distance) || distance < 0) return SLOT_SENSOR_ERROR;
+  return distance <= OCCUPIED_DISTANCE ? SLOT_OCCUPIED : SLOT_EMPTY;
+}
+
+int slotStateToThingSpeak(SlotState state) { return static_cast<int>(state); }
 
 // ==================================================
 // ĐIỀU KHIỂN LED
@@ -162,41 +193,45 @@ void updateLED(int redPin,int greenPin,bool occupied) {
   }
 }
 
+//điều khiển LED theo trạng thái
+void updateSlotLED(int redPin, int greenPin, SlotState state) {
+  if (state == SLOT_OCCUPIED) {
+    digitalWrite(redPin, HIGH); digitalWrite(greenPin, LOW);
+  } else if (state == SLOT_EMPTY) {
+    digitalWrite(redPin, LOW); digitalWrite(greenPin, HIGH);
+  } else {
+    digitalWrite(redPin, LOW); digitalWrite(greenPin, LOW);
+  }
+}
+
 // ==================================================
 // CẬP NHẬT OLED
 // ==================================================
 
-void updateOLED(bool occupied1, bool occupied2, bool occupied3, int available) {
-
+void updateOLED( // hiển thị lỗi cảm biến trên màn hình
+  SlotState slot1,
+  SlotState slot2,
+  SlotState slot3,
+  int available
+) {
   display.clearDisplay();
-
   display.setTextColor(SSD1306_WHITE);
   display.setTextSize(1);
-
   display.setCursor(25, 0);
   display.println("SMART PARKING");
-
   display.setCursor(0, 15);
   display.print("SLOT 1: ");
-  display.println(occupied1 ? "OCCUPIED" : "EMPTY");
-
+  display.println(slot1 == SLOT_SENSOR_ERROR ? "SENSOR ERROR" : (slot1 == SLOT_OCCUPIED ? "OCCUPIED" : "EMPTY"));
   display.setCursor(0, 28);
   display.print("SLOT 2: ");
-  display.println(
-    occupied2 ? "OCCUPIED" : "EMPTY"
-  );
-
+  display.println(slot2 == SLOT_SENSOR_ERROR ? "SENSOR ERROR" : (slot2 == SLOT_OCCUPIED ? "OCCUPIED" : "EMPTY"));
   display.setCursor(0, 41);
   display.print("SLOT 3: ");
-  display.println(
-    occupied3 ? "OCCUPIED" : "EMPTY"
-  );
-
+  display.println(slot3 == SLOT_SENSOR_ERROR ? "SENSOR ERROR" : (slot3 == SLOT_OCCUPIED ? "OCCUPIED" : "EMPTY"));
   display.setCursor(0, 54);
   display.print("AVAILABLE: ");
   display.print(available);
   display.println("/3");
-
   display.display();
 }
 
@@ -206,8 +241,16 @@ void updateOLED(bool occupied1, bool occupied2, bool occupied3, int available) {
 
 void updateGate(float gateDistance,int availableCount) {
 
-  bool carDetected =
-    gateDistance <= GATE_DETECT_DISTANCE;
+  if (!isfinite(gateDistance) || gateDistance < 0) {
+    if (gateOpened) {
+      gateServo.write(GATE_CLOSED);
+      gateOpened = false;
+    }
+    Serial.println("GATE FAULT: Cảm biến lối vào không hợp lệ, cổng vẫn đóng");
+    return;
+  }
+
+  bool carDetected = gateDistance <= GATE_DETECT_DISTANCE;
 
   // Xe tới và còn chỗ
   if (carDetected && availableCount > 0) {
@@ -398,9 +441,9 @@ void sendToThingSpeak(
   float distance1,
   float distance2,
   float distance3,
-  bool occupied1,
-  bool occupied2,
-  bool occupied3,
+  SlotState slot1, 
+  SlotState slot2,
+  SlotState slot3,
   int availableCount,
   int occupiedCount,
   float gateDistance
@@ -419,9 +462,9 @@ void sendToThingSpeak(
 
   String url = "https://api.thingspeak.com/update?api_key=";
   url += writeAPIKey ;
-  url += "&field1=" + String(occupied1 ? 1 : 0);
-  url += "&field2=" + String(occupied2 ? 1 : 0);
-  url += "&field3=" + String(occupied3 ? 1 : 0);
+  url += "&field1=" + String(slotStateToThingSpeak(slot1)); 
+  url += "&field2=" + String(slotStateToThingSpeak(slot2)); 
+  url += "&field3=" + String(slotStateToThingSpeak(slot3));
   url += "&field4=" + String(availableCount);
   url += "&field5=" + String(occupiedCount);
   url += "&field6=" + String(occupancyPercent);
@@ -437,7 +480,7 @@ void sendToThingSpeak(
         Serial.print("ThingSpeak update OK, entry ID: ");
         Serial.println(entryId);
       } else {
-        Serial.println("ThingSpeak khong cap nhat: kiem tra Write API Key/chu ky gui");
+        Serial.println("ThingSpeak không cập nhật: Vui lòng kiểm tra Write API Key/chữ ký gửi");
       }
     } else {
       Serial.print("ThingSpeak HTTP error: ");
@@ -445,7 +488,7 @@ void sendToThingSpeak(
     }
     http.end();
   } else {
-    Serial.println("Khong khoi tao duoc ket noi ThingSpeak");
+    Serial.println("Không khởi tạo được kết nối ThingSpeak");
   }
 }
 
@@ -460,7 +503,7 @@ void setup() {
   // -------------------------
   // WIFI
   // -------------------------
-  // [KHAC BAN CHINH] Ket noi Wi-Fi toi da 15 giay; that bai thi cac phan con lai van chay.
+  // Ket noi Wi-Fi toi da 15 giay; that bai thi cac phan con lai van chay.
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifi_ssid, wifi_password, 6);
 
@@ -564,7 +607,7 @@ void setup() {
   display.setTextSize(1);
 
   display.setCursor(25, 0);
-  display.println("SMART PARKING");
+  display.println("PARKINGSENSE NEXUS");
 
   display.setCursor(0, 20);
   display.println("System starting...");
@@ -602,69 +645,40 @@ void loop() {
   // XÁC ĐỊNH SLOT
   // -------------------------
 
-  bool occupied1 =
-    distance1 <= OCCUPIED_DISTANCE;
-
-  bool occupied2 =
-    distance2 <= OCCUPIED_DISTANCE;
-
-  bool occupied3 =
-    distance3 <= OCCUPIED_DISTANCE;
-
+  SlotState slot1 = classifySlot(distance1);
+  SlotState slot2 = classifySlot(distance2);
+  SlotState slot3 = classifySlot(distance3);
+  bool occupied1 = slot1 == SLOT_OCCUPIED;
+  bool occupied2 = slot2 == SLOT_OCCUPIED;
+  bool occupied3 = slot3 == SLOT_OCCUPIED;
+  
   // -------------------------
   // LED
   // -------------------------
-
-  updateLED(
-    RED_1,
-    GREEN_1,
-    occupied1
-  );
-
-  updateLED(
-    RED_2,
-    GREEN_2,
-    occupied2
-  );
-
-  updateLED(
-    RED_3,
-    GREEN_3,
-    occupied3
-  );
-
+  //Red=occupied, green=empty, both off=sensor error
+  updateSlotLED(RED_1, GREEN_1, slot1);
+  updateSlotLED(RED_2, GREEN_2, slot2);
+  updateSlotLED(RED_3, GREEN_3, slot3);
+  
+ 
   // -------------------------
   // ĐẾM SLOT
   // -------------------------
 
-  int occupiedCount =
-    occupied1 +
-    occupied2 +
-    occupied3;
-
-  int availableCount =
-    3 - occupiedCount;
+  int occupiedCount = (slot1 == SLOT_OCCUPIED) + (slot2 == SLOT_OCCUPIED) + (slot3 == SLOT_OCCUPIED);
+  int availableCount = (slot1 == SLOT_EMPTY) + (slot2 == SLOT_EMPTY) + (slot3 == SLOT_EMPTY);
 
   // -------------------------
   // OLED
   // -------------------------
 
-  updateOLED(
-    occupied1,
-    occupied2,
-    occupied3,
-    availableCount
-  );
+  updateOLED(slot1, slot2, slot3, availableCount);
 
   // -------------------------
   // ĐỌC CẢM BIẾN CỔNG
   // -------------------------
 
-  float gateDistance =
-    getDistance(
-      TRIG_GATE,
-      ECHO_GATE
-    );
+  float gateDistance = getFilteredDistance(TRIG_GATE, ECHO_GATE);
 
   // Canh bao timeout cam bien neu khong co phan hoi 5 lan doc lien tiep.
   updateSensorHealth(0, distance1, "Slot 1");
@@ -727,9 +741,9 @@ void loop() {
       distance1,
       distance2,
       distance3,
-      occupied1,
-      occupied2,
-      occupied3,
+      slot1, // [FIX-1] Send three-state slot status.
+      slot2,
+      slot3,
       availableCount,
       occupiedCount,
       gateDistance
