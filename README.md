@@ -1,4 +1,4 @@
-# ParkSense Nexus – IoT Smart Parking System
+﻿# ParkSense Nexus – IoT Smart Parking System
 
 **Sense the Space. Simplify the Parking.**
 
@@ -55,6 +55,10 @@ Ultrasonic Sensors
 | Breadboard and jumper wires | Circuit assembly |
 
 *The system is designed around three parking slots and one entrance detection point.*
+
+## Wokwi Simulation
+
+[Open the project in Wokwi](https://wokwi.com/projects/473228820764815361)
 
 ## Software and Technologies
 
